@@ -8,6 +8,7 @@ const messages = {
     "delete": "Delete",
     "edit": "Edit",
     "copy": "Copy",
+    "fullscreen": "Fullscreen",
     "create": "Create",
     "update": "Update",
     "search": "Search",
@@ -35,6 +36,12 @@ const messages = {
     "collapse": "Collapse",
     "hide": "Hide",
     "clear": "Clear",
+    "workspaceTools": "Workspace Tools",
+    "clearContent": "Clear Content",
+    "clearContentWillLabel": "Clears:",
+    "clearContentWill": "prompts, derived results, test outputs, temporary variables",
+    "clearContentKeepLabel": "Keeps:",
+    "clearContentKeep": "model, template, and layout selections",
     "createdAt": "Created at",
     "version": "V{version}",
     "actions": "Actions",
@@ -176,7 +183,8 @@ const messages = {
       "testProcessError": "Error occurred during test process",
       "initTemplateFailed": "Failed to initialize template selection",
       "appInitFailed": "Application initialization failed, please refresh or contact support",
-      "loadRecordFailed": "Failed to load version content"
+      "loadRecordFailed": "Failed to load version content",
+      "promptGardenImportFailed": "Failed to import from Prompt Garden"
     },
     "success": {
       "optimizeSuccess": "Optimization successful",

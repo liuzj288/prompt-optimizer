@@ -1,6 +1,11 @@
 const messages = {
   "favorites": {
     "title": "我的收藏",
+    "page": {
+      "title": "收藏夾",
+      "returnToWorkspace": "返回工作區",
+      "closeTitle": "關閉收藏夾並返回優化工作區"
+    },
     "categories": {
       "default": {
         "uncategorized": "未分類",
@@ -22,14 +27,18 @@ const messages = {
       "searchPlaceholder": "搜尋收藏...",
       "allCategories": "全部分類",
       "allTags": "全部標籤",
+      "allModes": "全部",
+      "popularTags": "常用標籤",
       "totalCount": "共 {count} 項",
       "import": "匯入",
       "add": "新增",
       "emptySearchResult": "沒有找到相符的收藏",
       "emptyDescription": "還沒有收藏任何提示詞",
-      "startOptimize": "優化",
       "importDialog": {
         "title": "匯入收藏",
+        "sourceLabel": "資料來源",
+        "sourceFile": "上傳檔案",
+        "sourcePaste": "貼上 JSON",
         "selectFile": "選擇 JSON 檔案",
         "uploadHint": "點選或拖曳檔案到此區域",
         "supportFormat": "支援 .json 檔案",
@@ -39,6 +48,10 @@ const messages = {
         "skipDuplicate": "跳過重複",
         "overwriteDuplicate": "覆蓋重複",
         "createCopy": "建立副本",
+        "changeFile": "替換檔案",
+        "resultHintSkip": "遇到重複收藏時保留現有內容，只匯入新的收藏。",
+        "resultHintOverwrite": "遇到重複收藏時以匯入內容覆蓋現有收藏。",
+        "resultHintMerge": "遇到重複收藏時保留原收藏，並將匯入內容另存為副本。",
         "cancel": "取消",
         "import": "匯入",
         "importing": "匯入中...",
@@ -46,7 +59,8 @@ const messages = {
         "importSuccess": "匯入完成：成功 {imported} 項，跳過 {skipped} 項",
         "importPartialFailed": "部分收藏匯入失敗",
         "importFailed": "匯入失敗",
-        "readFileFailed": "讀取檔案失敗"
+        "readFileFailed": "讀取檔案失敗",
+        "noFileSize": "大小未知"
       },
       "categoryManager": {
         "title": "分類管理"
@@ -75,6 +89,12 @@ const messages = {
       "preview": {
         "title": "收藏詳情",
         "updatedAt": "更新於 {time}",
+        "selectFavorite": "選擇一條收藏後即可在這裡查看詳情",
+        "backToList": "返回列表",
+        "listTitle": "收藏列表",
+        "contentTitle": "正文內容",
+        "extraTitle": "擴展資訊",
+        "useCountInline": "已使用 {count} 次",
         "garden": {
           "snapshotTitle": "Prompt Garden 快照",
           "snapshotHint": "展示從 Prompt Garden 匯入的可視化資源和變數設定",
@@ -114,6 +134,25 @@ const messages = {
           "title": "圖片資源",
           "hint": "以下圖片將隨收藏一起展示",
           "imageAlt": "收藏圖片 #{index}"
+        },
+        "reproducibility": {
+          "title": "變數與範例",
+          "empty": "暫無變數或範例設定",
+          "variables": "變數",
+          "examples": "範例",
+          "variableCount": "變數 {count}",
+          "exampleCount": "範例 {count}",
+          "hasInputImages": "含輸入圖",
+          "variableName": "變數名",
+          "variableDefault": "預設值",
+          "variableRequired": "必填",
+          "variableDescription": "說明",
+          "requiredYes": "是",
+          "requiredNo": "否",
+          "exampleLabel": "範例 #{index}",
+          "parameters": "參數",
+          "images": "圖片",
+          "inputImages": "輸入圖"
         }
       },
       "messages": {
@@ -149,8 +188,11 @@ const messages = {
         },
         "imageSubMode": {
           "text2image": "文生圖",
-          "image2image": "圖生圖"
-        }
+          "image2image": "圖生圖",
+          "multiimage": "多圖生成"
+        },
+        "variableCount": "變數 {count}",
+        "exampleCount": "範例 {count}"
       },
       "categories": {
         "default": {
@@ -229,8 +271,8 @@ const messages = {
       "createTitle": "新建收藏",
       "editTitle": "編輯收藏",
       "saveTitle": "儲存到收藏夾",
-      "basicInfo": "📋 基礎資訊",
-      "contentTitle": "📝 正文內容",
+      "basicInfo": "基礎資訊",
+      "contentTitle": "正文內容",
       "titleLabel": "標題",
       "titlePlaceholder": "為這個提示詞起個名字",
       "categoryLabel": "分類",
@@ -247,11 +289,41 @@ const messages = {
       "imagesLabel": "圖片",
       "imagesUploadHint": "點選或拖曳圖片到此區域",
       "imagesUploadSupport": "支援常見圖片格式，可新增多張",
+      "addImages": "繼續新增圖片",
       "imageAlt": "圖片 #{index}",
       "coverTag": "封面",
       "setAsCover": "設為封面",
       "removeImage": "移除",
       "clearImages": "清空圖片",
+      "reproducibility": {
+        "title": "變數與範例",
+        "hint": "可留空；有變數或範例時會隨收藏一起展示，用於復現 Prompt Garden 或變數模式提示詞。",
+        "empty": "目前收藏沒有變數或範例設定，需要時再新增。",
+        "variables": "變數",
+        "examples": "範例",
+        "addVariable": "新增變數",
+        "addExample": "新增範例",
+        "noVariables": "暫無變數設定",
+        "noExamples": "暫無範例設定",
+        "variableNamePlaceholder": "變數名，如 style",
+        "variableDefaultPlaceholder": "預設值（可選）",
+        "variableTypePlaceholder": "變數類型",
+        "variableOptionsPlaceholder": "可選值，用逗號或換行分隔",
+        "variableDescriptionPlaceholder": "變數說明（可選）",
+        "required": "必填",
+        "remove": "移除",
+        "exampleIdPlaceholder": "範例 ID（可選）",
+        "exampleTextPlaceholder": "範例名稱或說明（可選）",
+        "exampleDescriptionPlaceholder": "範例描述（可選）",
+        "exampleParametersPlaceholder": "參數，每行 key=value",
+        "exampleInputImagesPlaceholder": "輸入圖片 URL，每行一個",
+        "variableType": {
+          "string": "文字",
+          "number": "數字",
+          "boolean": "布林",
+          "enum": "枚舉"
+        }
+      },
       "contentPlaceholder": "在這裡輸入提示詞內容...",
       "cancel": "取消",
       "save": "儲存",

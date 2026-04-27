@@ -34,6 +34,12 @@ const messages = {
     "collapse": "收起",
     "hide": "隐藏",
     "clear": "清空",
+    "workspaceTools": "工作区工具",
+    "clearContent": "清理内容",
+    "clearContentWillLabel": "清理内容：",
+    "clearContentWill": "提示词、派生结果、测试结果、临时变量",
+    "clearContentKeepLabel": "不会清理内容：",
+    "clearContentKeep": "模型、模板、布局选择",
     "createdAt": "创建于",
     "version": "V{version}",
     "actions": "操作",
@@ -53,6 +59,7 @@ const messages = {
     "integer": "整数",
     "optional": "可选",
     "copy": "复制",
+    "fullscreen": "全屏",
     "content": "内容",
     "focus": "聚焦",
     "noContent": "暂无内容",
@@ -176,7 +183,8 @@ const messages = {
       "testProcessError": "测试过程中发生错误",
       "initTemplateFailed": "初始化模板选择失败",
       "appInitFailed": "应用初始化失败，请刷新或联系支持",
-      "loadRecordFailed": "加载版本内容失败"
+      "loadRecordFailed": "加载版本内容失败",
+      "promptGardenImportFailed": "从 Prompt Garden 导入失败"
     },
     "success": {
       "optimizeSuccess": "优化成功",

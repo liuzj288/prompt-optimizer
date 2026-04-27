@@ -21,7 +21,6 @@ import type {
 } from '@prompt-optimizer/core'
 
 import { useToast } from '../ui/useToast'
-import { createDefaultEvaluationResults } from '../../types/evaluation'
 import { isValidVariableName } from '../../types/variable'
 import { i18n } from '../../plugins/i18n'
 import type { BasicSystemSessionApi } from '../../stores/session/useBasicSystemSession'
@@ -314,7 +313,7 @@ const saveImportedPromptToFavorites = async (opts: {
   const snapshot = await buildStorableGardenSnapshot(
     fetched.gardenSnapshot,
     imageStorageService,
-    { allowImageFallback: false },
+    { allowImageFallback: true },
   )
   const media = buildFavoriteMediaFromSnapshot(snapshot)
   const favorites = await manager.getFavorites()
@@ -886,7 +885,8 @@ const persistSourcesToAssetIdsWithFallback = async (opts: {
         fallbackSources.push(source)
       }
     } catch (error) {
-      console.warn('[PromptGardenImport] Failed to persist snapshot image source:', source, error)
+      const log = allowSourceFallback ? console.info : console.warn
+      log('[PromptGardenImport] Failed to persist snapshot image source:', source, error)
       if (!allowSourceFallback) {
         throw error
       }
@@ -1072,7 +1072,7 @@ const pickImportedExample = (
   return examples[0] || null
 }
 
-const clearSessionForExternalImport = (targetKey: SupportedSubModeKey, api: {
+const clearSessionContentForExternalImport = (targetKey: SupportedSubModeKey, api: {
   basicSystemSession: BasicSystemSessionApi
   basicUserSession: BasicUserSessionApi
   proVariableSession: ProVariableSessionApi
@@ -1080,82 +1080,39 @@ const clearSessionForExternalImport = (targetKey: SupportedSubModeKey, api: {
   imageImage2ImageSession: ImageImage2ImageSessionApi
   imageMultiImageSession: ImageMultiImageSessionApi
   optimizerCurrentVersions: Ref<PromptRecordChain['versions']>
-}, content: string) => {
-  const resetCommon = (session: {
-    updateOptimizedResult: (payload: {
-      optimizedPrompt: string
-      reasoning?: string
-      chainId: string
-      versionId: string
-    }) => void
-    // Pinia setup stores unwrap refs on the store type, so this is the plain value.
-    evaluationResults?: unknown
-  }) => {
-    session.updateOptimizedResult({
-      optimizedPrompt: '',
-      reasoning: '',
-      chainId: '',
-      versionId: ''
-    })
-    if (session.evaluationResults !== undefined) {
-      session.evaluationResults = createDefaultEvaluationResults()
-    }
-  }
-
+}) => {
   if (targetKey === 'basic-system') {
-    api.basicSystemSession.updatePrompt(content)
-    resetCommon(api.basicSystemSession)
-    api.basicSystemSession.updateTestContent('')
-    api.basicSystemSession.resetTestVariantState()
+    api.basicSystemSession.clearContent({ persist: false })
     api.optimizerCurrentVersions.value = []
     return
   }
 
   if (targetKey === 'basic-user') {
-    api.basicUserSession.updatePrompt(content)
-    resetCommon(api.basicUserSession)
-    api.basicUserSession.updateTestContent('')
-    api.basicUserSession.resetTestVariantState()
+    api.basicUserSession.clearContent({ persist: false })
     api.optimizerCurrentVersions.value = []
     return
   }
 
   if (targetKey === 'pro-variable') {
-    api.proVariableSession.updatePrompt(content)
-    resetCommon(api.proVariableSession)
-    api.proVariableSession.updateTestContent('')
-    api.proVariableSession.resetTestVariantState()
+    api.proVariableSession.clearContent({ persist: false })
     return
   }
 
   if (targetKey === 'pro-multi') {
-    // Conversation mode uses a different state tree (messages snapshot + selection).
     return
   }
 
   if (targetKey === 'image-text2image') {
-    api.imageText2ImageSession.updatePrompt(content)
-    resetCommon(api.imageText2ImageSession)
-    api.imageText2ImageSession.updateOriginalImageResult(null)
-    api.imageText2ImageSession.updateOptimizedImageResult(null)
+    api.imageText2ImageSession.clearContent({ persist: false })
     return
   }
 
   if (targetKey === 'image-multiimage') {
-    api.imageMultiImageSession.updatePrompt(content)
-    resetCommon(api.imageMultiImageSession)
-    api.imageMultiImageSession.replaceInputImages([])
-    api.imageMultiImageSession.updateOriginalImageResult(null)
-    api.imageMultiImageSession.updateOptimizedImageResult(null)
+    api.imageMultiImageSession.clearContent({ persist: false })
     return
   }
 
-  // image-image2image
-  api.imageImage2ImageSession.updatePrompt(content)
-  resetCommon(api.imageImage2ImageSession)
-  api.imageImage2ImageSession.updateInputImage(null)
-  api.imageImage2ImageSession.updateOriginalImageResult(null)
-  api.imageImage2ImageSession.updateOptimizedImageResult(null)
+  api.imageImage2ImageSession.clearContent({ persist: false })
 }
 
 type SaveFavoriteDialogPayload = {
@@ -1273,18 +1230,8 @@ export function useAppPromptGardenImport(options: AppPromptGardenImportOptions) 
             throw new Error('Empty conversation content')
           }
 
+          proMultiMessageSession.clearContent({ persist: false })
           proMultiMessageSession.updateConversationMessages(messages)
-
-          // Reset state that is tied to the previously selected message/chain.
-          proMultiMessageSession.setMessageChainMap({})
-          proMultiMessageSession.resetTestVariantState()
-          proMultiMessageSession.updateOptimizedResult({
-            optimizedPrompt: '',
-            reasoning: '',
-            chainId: '',
-            versionId: '',
-          })
-          proMultiMessageSession.evaluationResults = createDefaultEvaluationResults()
 
           // Auto-select latest system/user message for convenience.
           let selectedId = ''
@@ -1303,7 +1250,7 @@ export function useAppPromptGardenImport(options: AppPromptGardenImportOptions) 
             throw new Error('Empty prompt content')
           }
 
-          clearSessionForExternalImport(
+          clearSessionContentForExternalImport(
             targetKey,
             {
               basicSystemSession,
@@ -1313,9 +1260,22 @@ export function useAppPromptGardenImport(options: AppPromptGardenImportOptions) 
               imageImage2ImageSession,
               imageMultiImageSession,
               optimizerCurrentVersions,
-            },
-            content
+            }
           )
+
+          if (targetKey === 'basic-system') {
+            basicSystemSession.updatePrompt(content)
+          } else if (targetKey === 'basic-user') {
+            basicUserSession.updatePrompt(content)
+          } else if (targetKey === 'pro-variable') {
+            proVariableSession.updatePrompt(content)
+          } else if (targetKey === 'image-text2image') {
+            imageText2ImageSession.updatePrompt(content)
+          } else if (targetKey === 'image-multiimage') {
+            imageMultiImageSession.updatePrompt(content)
+          } else {
+            imageImage2ImageSession.updatePrompt(content)
+          }
         }
 
         // Import variables into submode-scoped temporary variables.
@@ -1440,24 +1400,18 @@ export function useAppPromptGardenImport(options: AppPromptGardenImportOptions) 
               getFavoriteImageStorageService?.() || getImageStorageService?.() || null
 
             let snapshot = fetched.gardenSnapshot
-            let includeMedia = true
             try {
               snapshot = await buildStorableGardenSnapshot(snapshot, imageStorageService, {
-                allowImageFallback: false,
+                allowImageFallback: true,
               })
             } catch (error) {
               console.info('[PromptGardenImport] Failed to persist snapshot assets for favorite dialog:', error)
-              includeMedia = false
             }
 
+            const media = buildFavoriteMediaFromSnapshot(snapshot)
             const metadata: Record<string, unknown> = {
               gardenSnapshot: snapshot,
-              ...(includeMedia
-                ? (() => {
-                    const media = buildFavoriteMediaFromSnapshot(snapshot)
-                    return media ? { media } : {}
-                  })()
-                : {}),
+              ...(media ? { media } : {}),
             }
 
             openSaveFavoriteDialog({
