@@ -15,6 +15,7 @@
         <div class="workspace-page-tools">
             <WorkspaceUtilityMenu
                 :disabled="contextUserOptimization.isOptimizing || contextUserOptimization.isIterating || isAnyVariantRunning"
+                :source="resolveSourceAssetRef(proVariableSession.origin, proVariableSession.assetBinding)"
                 test-id="pro-variable-workspace-utility-menu"
                 @clear="handleClearContent"
             />
@@ -184,7 +185,7 @@
                       @openTemplateManager="handleOpenTemplateManager"
                       @switchVersion="handleSwitchVersion"
                       @switchToV0="handleSwitchToV0"
-                      @save-favorite="emit('save-favorite', $event)"
+                      @save-favorite="handleSaveFavorite"
                      @open-preview="handleOpenPromptPreview"
                      @apply-improvement="handleApplyImprovement"
                      @save-local-edit="handleSaveLocalEdit"
@@ -218,6 +219,7 @@
                         :global-variables="globalVariables"
                         :predefined-variables="predefinedVariables"
                         :temporary-variables="temporaryVariables"
+                        @open-variable-manager="handleOpenVariableManager"
                         @variable-change="handleTestVariableChange"
                         @save-to-global="handleSaveToGlobalFromTest"
                         @temporary-variable-remove="handleTestVariableRemove"
@@ -398,6 +400,16 @@
                                 >
                                     <template #toolbar-right-extra>
                                         <div v-if="hasVariantResult(id)" class="output-evaluation-entry">
+                                            <SaveTestResultExampleButton
+                                                sub-mode-key="pro-variable"
+                                                :variant-id="id"
+                                                :content="contextUserOptimization.optimizedPrompt || contextUserOptimization.prompt || ''"
+                                                :original-content="contextUserOptimization.prompt || ''"
+                                                function-mode="context"
+                                                optimization-mode="user"
+                                                :disabled="variantRunning[id]"
+                                                :test-id="`save-test-example-pro-variable-${id}`"
+                                            />
                                             <EvaluationScoreBadge
                                                 v-if="getResultEvaluationProps(id).hasEvaluation || getResultEvaluationProps(id).isEvaluating"
                                                 :score="getResultEvaluationProps(id).score"
@@ -524,6 +536,7 @@ import PromptPanelUI from "../PromptPanel.vue";
 import PromptPreviewPanel from "../PromptPreviewPanel.vue";
 import ContextUserTestPanel from "./ContextUserTestPanel.vue";
 import OutputDisplay from "../OutputDisplay.vue";
+import SaveTestResultExampleButton from '../SaveTestResultExampleButton.vue'
 import SelectWithConfig from "../SelectWithConfig.vue";
 import TestPanelVersionSelect from '../TestPanelVersionSelect.vue'
 import {
@@ -537,6 +550,7 @@ import {
 } from '../evaluation'
 import { buildCompareToolbarStatus } from '../evaluation/compare-ui'
 import WorkspaceUtilityMenu from '../common/WorkspaceUtilityMenu.vue'
+import { resolveSourceAssetRef } from '../../utils/source-asset'
 import {
     applyPatchOperationsToText,
     PREDEFINED_VARIABLES,
@@ -707,6 +721,11 @@ const appOpenTemplateManager = inject<((type?: string) => void) | null>(
     null,
 )
 
+// 注入 App 层统一的 Pro 工作区接口
+const appOpenVariableManager = inject<((variableName?: string) => void) | null>('openVariableManager', null)
+const appHandleSaveFavorite = inject<((data: SaveFavoritePayload) => void) | null>('handleSaveFavorite', null)
+const appSaveToGlobal = inject<((name: string, value: string) => void) | null>('saveToGlobal', null)
+
 const handleOpenModelManager = () => {
     if (appOpenModelManager) {
         appOpenModelManager('text')
@@ -723,6 +742,16 @@ const handleOpenTemplateManager = (typeOrPayload?: string | Record<string, unkno
         return
     }
     emit('open-template-manager', type)
+}
+
+const handleSaveFavorite = (data: SaveFavoritePayload) => {
+    if (appHandleSaveFavorite) { appHandleSaveFavorite(data); return; }
+    emit('save-favorite', data)
+}
+
+const handleOpenVariableManager = () => {
+    if (appOpenVariableManager) { appOpenVariableManager(); return; }
+    emit('open-variable-manager')
 }
 
 // ========================
@@ -971,6 +1000,8 @@ const contextUserOptimization = useContextUserOptimization(
         currentChainId: sessionChainId as unknown as Ref<string>,
         currentVersionId: sessionVersionId as unknown as Ref<string>,
         clearSessionContent: () => proVariableSession.clearContent(),
+        clearAssetBinding: () => proVariableSession.clearAssetBinding(),
+        getSourceBindingSession: () => proVariableSession,
     },
 );
 
@@ -1981,6 +2012,7 @@ const {
     temporaryVariables: computed(() => ({ ...temporaryVariables.value })),
     predefinedVariables,
     saveGlobalVariable: (name, value) => {
+        if (appSaveToGlobal) { appSaveToGlobal(name, value); return; }
         if (variableManager?.isReady.value) {
             variableManager.addVariable(name, value)
         }
@@ -1992,6 +2024,7 @@ const {
 })
 
 const handleSaveToGlobalFromTest = (name: string, value: string) => {
+    if (appSaveToGlobal) { appSaveToGlobal(name, value); return; }
     if (variableManager?.isReady.value) {
         variableManager.addVariable(name, value)
     }

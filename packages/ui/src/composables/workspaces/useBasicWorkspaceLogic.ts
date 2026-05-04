@@ -13,12 +13,20 @@
  */
 import { ref, computed, watch, type Ref, type ComputedRef } from 'vue'
 import type { AppServices } from '../../types/services'
-import type { OptimizationRequest, PromptRecord, PromptRecordChain, PromptRecordType } from '@prompt-optimizer/core'
+import type {
+  OptimizationRequest,
+  PromptAssetBinding,
+  PromptRecord,
+  PromptRecordChain,
+  PromptRecordType,
+  PromptSessionOrigin,
+} from '@prompt-optimizer/core'
 import { v4 as uuidv4 } from 'uuid'
 import { useToast } from '../ui/useToast'
 import { useI18n } from 'vue-i18n'
 import { getI18nErrorMessage } from '../../utils/error'
 import type { IteratePayload } from '../../types/workspace'
+import { withHistorySourceBindingMetadata } from '../../utils/history-source-binding'
 
 type BasicSessionStore = {
   prompt: string
@@ -44,7 +52,10 @@ type BasicSessionStore = {
   updateTestModel: (key: string) => void
   updateTemplate: (id: string | null) => void
   updateIterateTemplate: (id: string | null) => void
+  clearAssetBinding?: () => void
   clearContent: () => void
+  assetBinding?: PromptAssetBinding
+  origin?: PromptSessionOrigin
 }
 
 interface UseBasicWorkspaceLogicOptions {
@@ -154,7 +165,7 @@ export function useBasicWorkspaceLogic(options: UseBasicWorkspaceLogicOptions) {
 
     isOptimizing.value = true
 
-    // 清理历史绑定，避免“旧 chainId/versionId”污染本次优化过程态
+    // 新优化会重置当前历史链，但保留 session 的来源资产坐标，供新历史链回溯收藏来源。
     sessionStore.updateOptimizedResult({
       optimizedPrompt: '',
       reasoning: '',
@@ -189,10 +200,10 @@ export function useBasicWorkspaceLogic(options: UseBasicWorkspaceLogicOptions) {
                 modelKey,
                 templateId,
                 timestamp: Date.now(),
-                metadata: {
+                metadata: withHistorySourceBindingMetadata({
                   optimizationMode,
                   functionMode: 'basic'
-                }
+                }, sessionStore)
               }
 
               const chain = await historyManager.createNewChain(recordData)
@@ -326,7 +337,7 @@ export function useBasicWorkspaceLogic(options: UseBasicWorkspaceLogicOptions) {
                     modelKey,
                     templateId: iterateTemplateId,
                     timestamp: Date.now(),
-                    metadata: { optimizationMode, functionMode: 'basic' },
+                    metadata: withHistorySourceBindingMetadata({ optimizationMode, functionMode: 'basic' }, sessionStore),
                   })
 
               currentChainId.value = chain.chainId
@@ -423,12 +434,12 @@ export function useBasicWorkspaceLogic(options: UseBasicWorkspaceLogicOptions) {
             modelKey,
             templateId,
             iterationNote: note,
-            metadata: {
+            metadata: withHistorySourceBindingMetadata({
               optimizationMode,
               functionMode: 'basic',
               localEdit: true,
               localEditSource: payload.source || 'manual',
-            },
+            }, sessionStore),
           })
         : await historyManager.createNewChain({
             id: uuidv4(),
@@ -438,12 +449,12 @@ export function useBasicWorkspaceLogic(options: UseBasicWorkspaceLogicOptions) {
             modelKey,
             templateId,
             timestamp: Date.now(),
-            metadata: {
+            metadata: withHistorySourceBindingMetadata({
               optimizationMode,
               functionMode: 'basic',
               localEdit: true,
               localEditSource: payload.source || 'manual',
-            },
+            }, sessionStore),
           })
 
       currentChainId.value = chain.chainId
@@ -543,7 +554,7 @@ export function useBasicWorkspaceLogic(options: UseBasicWorkspaceLogicOptions) {
    * 6. 分析提示词
    * - 不写入历史记录
    * - 只在当前工作区创建一个内存中的虚拟 V0
-   * - 清空当前链绑定，避免旧链继续影响下方版本区和右侧测试区
+   * - 清空当前历史链，避免旧 chain/version 继续影响下方版本区和右侧测试区
    */
   const handleAnalyze = () => {
     if (!prompt.value?.trim()) return

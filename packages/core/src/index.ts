@@ -124,6 +124,9 @@ export * from './services/prompt/types'
 export { ElectronPromptServiceProxy } from './services/prompt/electron-proxy'
 export * from './services/prompt/errors'
 
+// 导出标准提示词领域模型
+export * from './services/prompt-model'
+
 // 导出对比服务相关
 export { CompareService, createCompareService } from './services/compare/service'
 export type { ICompareService } from './services/compare/types'
@@ -148,6 +151,8 @@ export {
   isBrowser,
   isDevelopment,
   getEnvVar,
+  DEFAULT_VITE_ENV,
+  getDefaultEnvVar,
   scanCustomModelEnvVars,
   clearCustomModelEnvCache,
   CUSTOM_API_PATTERN,

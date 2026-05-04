@@ -3,6 +3,7 @@
         <div class="workspace-page-tools">
             <WorkspaceUtilityMenu
                 :disabled="isOptimizing || isIterating || isAnyVariantRunning"
+                :source="resolveSourceAssetRef(session.origin, session.assetBinding)"
                 test-id="image-image2image-workspace-utility-menu"
                 @clear="handleClearContent"
             />
@@ -519,6 +520,18 @@
                                     <div class="result-body">
                                         <template v-if="hasVariantResult(id)">
                                             <NSpace vertical :size="12" style="padding: 12px;">
+                                                <NFlex justify="end" align="center">
+                                                    <SaveTestResultExampleButton
+                                                        sub-mode-key="image-image2image"
+                                                        :variant-id="id"
+                                                        :content="optimizedPrompt || originalPrompt"
+                                                        :original-content="originalPrompt"
+                                                        function-mode="image"
+                                                        image-sub-mode="image2image"
+                                                        :disabled="variantRunning[id]"
+                                                        :test-id="`save-test-example-image-image2image-${id}`"
+                                                    />
+                                                </NFlex>
                                                 <AppPreviewImage
                                                     :data-testid="getVariantImageTestId(id)"
                                                     :src="getImageSrc(getVariantResult(id)?.images?.[0])"
@@ -743,11 +756,14 @@ import FullscreenDialog from "../FullscreenDialog.vue";
 import type { SelectOption } from "../../types/select-options";
 import { useToast } from "../../composables/ui/useToast";
 import { getI18nErrorMessage } from '../../utils/error'
+import { withHistorySourceBindingMetadata } from '../../utils/history-source-binding'
+import { resolveSourceAssetRef } from '../../utils/source-asset'
 import { downloadImageSource } from '../../utils/image-download'
 import { VariableAwareInput } from '../variable-extraction'
 import TemporaryVariablesPanel from '../variable/TemporaryVariablesPanel.vue'
 import VariableValuePreviewDialog from '../variable/VariableValuePreviewDialog.vue'
 import AppPreviewImage from '../media/AppPreviewImage.vue'
+import SaveTestResultExampleButton from '../SaveTestResultExampleButton.vue'
 import { useTemporaryVariables } from '../../composables/variable/useTemporaryVariables'
 import { useVariableAwareInputBridge } from '../../composables/variable/useVariableAwareInputBridge'
 import { useTestVariableManager } from '../../composables/variable/useTestVariableManager'
@@ -1591,7 +1607,7 @@ const handleSaveLocalEdit = async (payload: { note?: string }) => {
                   modelKey,
                   templateId,
                   iterationNote: payload.note,
-                  metadata: {
+                  metadata: withHistorySourceBindingMetadata({
                       optimizationMode: 'user' as OptimizationMode,
                       functionMode: 'image',
                       localEdit: true,
@@ -1599,7 +1615,7 @@ const handleSaveLocalEdit = async (payload: { note?: string }) => {
                       imageModelKey: selectedImageModelKey.value,
                       hasInputImage: !!inputImageB64.value,
                       compareMode: isCompareMode.value,
-                  },
+                  }, session),
               })
             : await historyManager.value.createNewChain({
                   id: uuidv4(),
@@ -1609,7 +1625,7 @@ const handleSaveLocalEdit = async (payload: { note?: string }) => {
                   modelKey,
                   templateId,
                   timestamp: Date.now(),
-                  metadata: {
+                  metadata: withHistorySourceBindingMetadata({
                       optimizationMode: 'user' as OptimizationMode,
                       functionMode: 'image',
                       localEdit: true,
@@ -1617,7 +1633,7 @@ const handleSaveLocalEdit = async (payload: { note?: string }) => {
                       imageModelKey: selectedImageModelKey.value,
                       hasInputImage: !!inputImageB64.value,
                       compareMode: isCompareMode.value,
-                  },
+                  }, session),
               })
 
         currentChainId.value = chain.chainId
@@ -1989,13 +2005,13 @@ const createHistoryRecord = async () => {
             modelKey: selectedTextModelKey.value,
             templateId: selectedTemplate.value.id,
             timestamp: Date.now(),
-            metadata: {
+            metadata: withHistorySourceBindingMetadata({
                 optimizationMode: 'user' as OptimizationMode,
                 functionMode: 'image',
                 imageModelKey: selectedImageModelKey.value,
                 hasInputImage: !!inputImageB64.value,
                 compareMode: isCompareMode.value,
-            },
+            }, session),
         }
 
         const newRecord = await historyManager.value.createNewChain(recordData)
@@ -2119,6 +2135,7 @@ const handleIteratePrompt = async (payload: {
                                 iterationNote: payload.iterateInput,
                                 modelKey: selectedTextModelKey.value,
                                 templateId: selectedIterateTemplate.value!.id,
+                                metadata: withHistorySourceBindingMetadata(undefined, session),
                             })
                             currentVersions.value = updatedChain.versions
                             currentVersionId.value = updatedChain.currentRecord.id

@@ -35,9 +35,10 @@ const translations = {
       primary: '打开产品',
       secondary: '查看文档',
       stats: [
-        { value: '4 步闭环', label: '从测试到应用' },
-        { value: '多工作区', label: '单条、变量、上下文' },
-        { value: '结果证据', label: '改动基于输出' }
+        { value: '4 类工作区', label: '文本、变量、上下文、图像' },
+        { value: '图像生成', label: '文生图、图生图、多图' },
+        { value: 'Prompt Garden', label: '发现、导入、收藏' },
+        { value: '智能收藏', label: '内部资产管理' }
       ],
       visualLabel: '结果闭环',
       visualTitle: '左改右测，结论回流',
@@ -97,7 +98,7 @@ const translations = {
     scenario: {
       kicker: '工作区覆盖',
       title: '适配不同的提示词结构',
-      lead: '单条提示词、变量模板和上下文链路，都能放进同一套验证流程。',
+      lead: '单条提示词、变量模板、上下文链路和图像生成，都能放进同一套结果验证流程。',
       columns: {
         type: '结构类型',
         fit: '适用内容',
@@ -121,6 +122,12 @@ const translations = {
           title: '多消息上下文',
           body: '当 system、user 与上下文共同影响结果时仍可分析。',
           tags: ['system + user', '上下文', '多消息']
+        },
+        {
+          label: '图像生成',
+          title: '文生图 / 图生图 / 多图',
+          body: '用真实图像生成结果比较不同提示词的效果，支持多图输入和风格迁移。',
+          tags: ['T2I', 'I2I', '多图生图', '风格迁移']
         }
       ]
     },
@@ -196,9 +203,10 @@ const translations = {
       primary: 'Open Product',
       secondary: 'Read Docs',
       stats: [
-        { value: '4-Step', label: 'From test to apply' },
-        { value: 'Multi-Workspace', label: 'Single, variable, context' },
-        { value: 'Evidence-Based', label: 'Edits follow outputs' }
+        { value: '4 Workspace Types', label: 'Text, variables, context, image' },
+        { value: 'Image Generation', label: 'T2I, I2I, multi-image' },
+        { value: 'Prompt Garden', label: 'Discover, import, collect' },
+        { value: 'Smart Favorites', label: 'Internal asset management' }
       ],
       visualLabel: 'Closed Loop',
       visualTitle: 'Edit left, test right',
@@ -257,8 +265,8 @@ const translations = {
     },
     scenario: {
       kicker: 'Workspace coverage',
-      title: 'Handle more than a single prompt string',
-      lead: 'Single prompts, variable templates, and context chains all fit into the same validation loop.',
+      title: 'Handle different prompt structures',
+      lead: 'Single prompts, variable templates, context chains, and image generation all fit into the same validation loop.',
       columns: {
         type: 'Structure',
         fit: 'Best for',
@@ -282,6 +290,12 @@ const translations = {
           title: 'Multi-message context',
           body: 'Useful when system, user, and context all affect the result.',
           tags: ['system + user', 'context', 'multi-message']
+        },
+        {
+          label: 'Image generation',
+          title: 'Text-to-image / Image-to-image / Multi-image',
+          body: 'Compare different prompts through real image generation, with multi-image input and style transfer support.',
+          tags: ['T2I', 'I2I', 'multi-image', 'style transfer']
         }
       ]
     },

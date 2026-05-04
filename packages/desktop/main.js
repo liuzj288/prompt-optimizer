@@ -295,6 +295,33 @@ function setupPreferenceHandlers() {
     }
   });
 
+  ipcMain.handle('preference-delete', async (event, key) => {
+    try {
+      await preferenceService.delete(key);
+      return createSuccessResponse(null);
+    } catch (error) {
+      return createErrorResponse(error);
+    }
+  });
+
+  ipcMain.handle('preference-keys', async () => {
+    try {
+      const result = await preferenceService.keys();
+      return createSuccessResponse(result);
+    } catch (error) {
+      return createErrorResponse(error);
+    }
+  });
+
+  ipcMain.handle('preference-clear', async () => {
+    try {
+      await preferenceService.clear();
+      return createSuccessResponse(null);
+    } catch (error) {
+      return createErrorResponse(error);
+    }
+  });
+
   ipcMain.handle('preference-getAll', async (event) => {
     try {
       const result = await preferenceService.getAll();
@@ -636,7 +663,7 @@ async function initializeServices() {
     contextRepo = createContextRepo(storageProvider);
 
     console.log('[DESKTOP] Creating Data manager...');
-    dataManager = createDataManager(modelManager, templateManager, historyManager, preferenceService, contextRepo);
+    dataManager = createDataManager(modelManager, templateManager, historyManager, preferenceService, contextRepo, imageModelManager);
 
     console.log('[DESKTOP] Creating Favorite manager...');
     favoriteManager = new FavoriteManager(storageProvider);
@@ -1823,6 +1850,24 @@ function setupIPC() {
     try {
       const safeUpdates = safeSerialize(updates);
       await favoriteManager.updateFavorite(id, safeUpdates);
+      return createSuccessResponse(null);
+    } catch (error) {
+      return createFavoriteErrorResponse(error);
+    }
+  });
+
+  ipcMain.handle('favorite-setFavoritePromptAssetCurrentVersion', async (event, id, versionId) => {
+    try {
+      await favoriteManager.setFavoritePromptAssetCurrentVersion(id, versionId);
+      return createSuccessResponse(null);
+    } catch (error) {
+      return createFavoriteErrorResponse(error);
+    }
+  });
+
+  ipcMain.handle('favorite-deleteFavoritePromptAssetVersion', async (event, id, versionId) => {
+    try {
+      await favoriteManager.deleteFavoritePromptAssetVersion(id, versionId);
       return createSuccessResponse(null);
     } catch (error) {
       return createFavoriteErrorResponse(error);

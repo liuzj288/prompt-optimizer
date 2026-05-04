@@ -4,14 +4,22 @@ import { useI18n } from 'vue-i18n'
 import { getI18nErrorMessage } from '../../utils/error'
 import { v4 as uuidv4 } from 'uuid'
 import type {
+  PromptAssetBinding,
   Template,
   PromptRecord,
   PromptRecordChain,
+  PromptSessionOrigin,
   OptimizationRequest
 } from '@prompt-optimizer/core'
 import type { AppServices } from '../../types/services'
+import { withHistorySourceBindingMetadata } from '../../utils/history-source-binding'
 
 type PromptChain = PromptRecordChain
+
+type SourceBindingSessionLike = {
+  assetBinding?: PromptAssetBinding
+  origin?: PromptSessionOrigin
+}
 
 export interface ContextUserOptimizationBindings {
   prompt?: Ref<string>
@@ -20,6 +28,10 @@ export interface ContextUserOptimizationBindings {
   currentChainId?: Ref<string>
   currentVersionId?: Ref<string>
   clearSessionContent?: () => void
+  clearAssetBinding?: () => void
+  assetBinding?: PromptAssetBinding
+  origin?: PromptSessionOrigin
+  getSourceBindingSession?: () => SourceBindingSessionLike | null | undefined
 }
 
 /**
@@ -96,6 +108,7 @@ export function useContextUserOptimization(
   const boundOptimizedReasoning = bindings?.optimizedReasoning ?? ref('')
   const boundCurrentChainId = bindings?.currentChainId ?? ref('')
   const boundCurrentVersionId = bindings?.currentVersionId ?? ref('')
+  const getSourceBindingSession = () => bindings?.getSourceBindingSession?.() ?? bindings
 
   // 使用 reactive 创建响应式状态对象
   const state = reactive({
@@ -165,10 +178,10 @@ export function useContextUserOptimization(
                   modelKey: selectedOptimizeModel.value,
                   templateId: selectedTemplate.value.id,
                   timestamp: Date.now(),
-                  metadata: {
+                  metadata: withHistorySourceBindingMetadata({
                     optimizationMode: 'user' as const,
                     functionMode: 'pro' as const  // ContextUser 属于 pro 模式
-                  }
+                  }, getSourceBindingSession())
                 }
 
                 const newRecord = await historyManager.value!.createNewChain(recordData)
@@ -264,11 +277,11 @@ export function useContextUserOptimization(
                     templateId: selectedIterateTemplate.value.id,
                     iterationNote: iterateInput,
                     timestamp: Date.now(),
-                    metadata: {
+                    metadata: withHistorySourceBindingMetadata({
                       optimizationMode: 'user' as const,
                       functionMode: 'pro' as const,
                       createdFromAnalyzeV0: true,
-                    }
+                    }, getSourceBindingSession())
                   })
                 } else {
                   // 保存迭代历史
@@ -278,7 +291,8 @@ export function useContextUserOptimization(
                     optimizedPrompt: state.optimizedPrompt,
                     iterationNote: iterateInput,
                     modelKey: selectedOptimizeModel.value,
-                    templateId: selectedIterateTemplate.value.id
+                    templateId: selectedIterateTemplate.value.id,
+                    metadata: withHistorySourceBindingMetadata(undefined, getSourceBindingSession()),
                   }
 
                   updatedChain = await historyManager.value!.addIteration(iterationData)
@@ -406,12 +420,12 @@ export function useContextUserOptimization(
             modelKey,
             templateId,
             timestamp: Date.now(),
-            metadata: {
+            metadata: withHistorySourceBindingMetadata({
               optimizationMode: 'user' as const,
               functionMode: 'pro' as const,
               localEdit: true,
               localEditSource: source || 'manual',
-            }
+            }, getSourceBindingSession())
           }
           const newRecord = await historyManager.value.createNewChain(recordData)
           state.currentChainId = newRecord.chainId
@@ -427,12 +441,12 @@ export function useContextUserOptimization(
           modelKey,
           templateId,
           iterationNote: note || (source === 'patch' ? 'Direct fix' : 'Manual edit'),
-          metadata: {
+          metadata: withHistorySourceBindingMetadata({
             optimizationMode: 'user' as const,
             functionMode: 'pro' as const,
             localEdit: true,
             localEditSource: source || 'manual',
-          }
+          }, getSourceBindingSession())
         })
 
         state.currentVersions = updatedChain.versions

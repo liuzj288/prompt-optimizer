@@ -74,6 +74,20 @@ So favorites behave more like a reusable entry with workspace context, not just 
 
 If a favorite was saved from the multi-image workflow, `Use now` also tries to restore that sub-mode and its media context so you do not need to rebuild the image set manually.
 
+## Applying examples to workspaces
+
+Favorites can also carry reproducible examples. When an example is applied, Prompt Optimizer restores the prompt together with the values, parameters, input images, or media that belong to that example.
+
+Supported targets include:
+
+- variable prompt workspace
+- multi-message context workspace
+- text-to-image workspace
+- image-to-image workspace
+- multi-image workspace
+
+This is useful when a favorite was saved with a known-good test case and you want to continue from the same evidence instead of rebuilding the setup by hand.
+
 ## How favorites and history should work together
 
 A practical workflow is:
@@ -122,6 +136,38 @@ The current implementation also supports a pluggable preview area for favorites.
 If your deployment enables `Prompt Garden` integration, a favorite preview can also show extra external snapshot information and media content.
 
 This is an optional integration, so it may not appear in every deployment.
+
+See [Prompt Garden](prompt-garden.md) for details.
+
+## v2.10.0 New Features
+
+### Resource-Aware Assets
+
+Favorites now support:
+
+- **Version History**: Track the evolution of prompts, view and restore historical versions
+- **Reproducible Examples**: Store test results and context for later reproduction and verification
+- **Media Support**: Images and cover images fully preserved
+
+### Source Binding
+
+Favorites imported from Prompt Garden automatically record:
+
+- Import code
+- Source link
+- Import time
+
+Facilitating later updates and source verification.
+
+### Complete Backup
+
+Exporting favorites now packages referenced images and media resources together. Importing automatically restores resource references, no need to separately migrate image files.
+
+Suitable for:
+
+- Migrating favorites with images
+- Complete backup of favorite collections
+- Sharing prompts with media
 
 ## Practical suggestions
 
