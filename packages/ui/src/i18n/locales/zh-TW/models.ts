@@ -38,6 +38,19 @@ const messages = {
         "responses": "Responses"
       }
     },
+    "customHeaders": {
+      "label": "自訂請求頭",
+      "namePlaceholder": "Header 名稱，如 x-auth-token",
+      "valuePlaceholder": "Header 值",
+      "add": "新增請求頭",
+      "validationError": "自訂請求頭配置無效：{details}",
+      "validation": {
+        "invalid-name": "Header 名稱格式無效",
+        "forbidden-name": "該 Header 由客戶端或瀏覽器管理，不能覆蓋",
+        "missing-value": "Header 值不能為空",
+        "invalid-value": "Header 值必須是文字、數字或布林值"
+      }
+    },
     "model": {
       "section": "模型配置"
     },
@@ -68,7 +81,11 @@ const messages = {
         "belowMin": "參數值不能小於 {min}",
         "aboveMax": "參數值不能大於 {max}",
         "mustBeInteger": "參數值必須是整數"
-      }
+      },
+      "formatJson": "JSON",
+      "formatString": "字串",
+      "parsedAsObject": "已解析為 Object ✓",
+      "invalidJson": "無效 JSON，將作為字串發送"
     },
     "modelKeyPlaceholder": "請輸入模型標識",
     "displayNamePlaceholder": "請輸入顯示名稱",
@@ -151,6 +168,14 @@ const messages = {
       "configure": "配置模型",
       "noModels": "請配置模型",
       "noAvailableModels": "暫無可用模型"
+    },
+    "quickSwitch": {
+      "title": "切換目前模型",
+      "placeholder": "選擇模型",
+      "modelTagTitle": "點擊切換目前配置的模型",
+      "fetchFailed": "取得線上模型列表失敗：{error}，可繼續選擇本地預設模型。",
+      "updateSuccess": "已切換為 {model}",
+      "updateFailed": "切換模型失敗：{error}"
     },
     "manager": {
       "displayName": "例如: 自訂模型",
