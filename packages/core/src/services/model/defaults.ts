@@ -4,6 +4,7 @@ import { TextAdapterRegistry } from '../llm/adapters/registry';
 import { getEnvVar } from '../../utils/environment';
 import { normalizeCustomRequestHeaders, validateCustomRequestHeaders } from '../../utils/custom-request-headers';
 import { generateDynamicModels } from './model-utils';
+import { CHROME_BUILT_IN_PROVIDER_ID } from '../llm/chrome-built-in';
 
 /**
  * Provider ID -> 环境变量 key 映射
@@ -19,8 +20,10 @@ const PROVIDER_ENV_KEYS = {
   dashscope: ['VITE_DASHSCOPE_API_KEY'],
   openrouter: ['VITE_OPENROUTER_API_KEY'],
   modelscope: ['VITE_MODELSCOPE_API_KEY'],
+  ollama: [],
   minimax: ['VITE_MINIMAX_API_KEY'],
-  cloudflare: ['VITE_CF_API_TOKEN']
+  cloudflare: ['VITE_CF_API_TOKEN'],
+  grok: ['VITE_GROK_API_KEY', 'VITE_XAI_API_KEY']
 } as const;
 
 const PROVIDER_EXTRA_CONNECTION_ENV_KEYS: Record<string, Record<string, string[]>> = {
@@ -30,6 +33,7 @@ const PROVIDER_EXTRA_CONNECTION_ENV_KEYS: Record<string, Record<string, string[]
 };
 
 const PROVIDER_REQUIRED_CONNECTION_FIELDS: Record<string, string[]> = {
+  ollama: [],
   cloudflare: ['apiKey', 'accountId']
 };
 
@@ -41,12 +45,24 @@ function getFirstEnvValue(envKeys: readonly string[]): string {
   return '';
 }
 
+function hasConnectionValue(value: unknown): boolean {
+  return typeof value === 'string' ? value.trim().length > 0 : !!value;
+}
+
+function shouldEnableFromRequiredFields(
+  connectionConfig: Record<string, unknown>,
+  requiredConnectionFields: readonly string[]
+): boolean {
+  return requiredConnectionFields.length > 0
+    && requiredConnectionFields.every((field) => hasConnectionValue(connectionConfig[field]));
+}
+
 /**
  * 获取所有内置模型的 ID 列表
  * 包括 PROVIDER_ENV_KEYS 中的所有 Provider 和 'custom'
  */
 export function getBuiltinModelIds(): string[] {
-  return [...Object.keys(PROVIDER_ENV_KEYS), 'custom'];
+  return [...Object.keys(PROVIDER_ENV_KEYS), CHROME_BUILT_IN_PROVIDER_ID, 'custom'];
 }
 
 /**
@@ -82,10 +98,7 @@ export function getDefaultTextModels(registry?: ITextAdapterRegistry): Record<st
     // 使用模型的默认参数值初始化 paramOverrides
     const defaultParamValues = defaultModel.defaultParameterValues || {};
     const requiredConnectionFields = PROVIDER_REQUIRED_CONNECTION_FIELDS[providerId] || ['apiKey'];
-    const enabled = requiredConnectionFields.every((field) => {
-      const value = connectionConfig[field];
-      return typeof value === 'string' ? value.trim().length > 0 : !!value;
-    });
+    const enabled = shouldEnableFromRequiredFields(connectionConfig, requiredConnectionFields);
 
     result[providerId] = {
       id: provider.id,
@@ -102,9 +115,16 @@ export function getDefaultTextModels(registry?: ITextAdapterRegistry): Record<st
   // Custom 单独处理（baseURL 和 model 来自环境变量）
   const openaiCompatibleAdapter = adapterRegistry.getAdapter('openai-compatible');
   const customApiKey = getEnvVar('VITE_CUSTOM_API_KEY').trim();
-  const customBaseURL = getEnvVar('VITE_CUSTOM_API_BASE_URL');
-  const customModelId = getEnvVar('VITE_CUSTOM_API_MODEL') || 'custom-model';
+  const customBaseURL = getEnvVar('VITE_CUSTOM_API_BASE_URL').trim();
+  const rawCustomModelId = getEnvVar('VITE_CUSTOM_API_MODEL').trim();
+  const customModelId = rawCustomModelId || 'custom-model';
   const rawCustomHeaders = getEnvVar('VITE_CUSTOM_API_HEADERS');
+  const hasExplicitCustomConfig = [
+    customApiKey,
+    customBaseURL,
+    rawCustomModelId,
+    rawCustomHeaders
+  ].some((value) => value.trim().length > 0);
   let customHeaders: Record<string, string> | undefined;
   if (rawCustomHeaders) {
     try {
@@ -132,7 +152,7 @@ export function getDefaultTextModels(registry?: ITextAdapterRegistry): Record<st
   result.custom = {
     id: 'custom',
     name: 'OpenAI Compatible (Custom)',
-    enabled: true,
+    enabled: hasExplicitCustomConfig,
     providerMeta: openaiCompatibleAdapter.getProvider(),
     modelMeta: customModelMeta,
     connectionConfig: {
@@ -142,6 +162,24 @@ export function getDefaultTextModels(registry?: ITextAdapterRegistry): Record<st
       ...(customHeaders ? { customHeaders } : {})
     },
     paramOverrides: { ...(customModelMeta.defaultParameterValues || {}) },
+    customParamOverrides: {}
+  };
+
+  const chromeBuiltInAdapter = adapterRegistry.getAdapter(CHROME_BUILT_IN_PROVIDER_ID);
+  const chromeBuiltInProvider = chromeBuiltInAdapter.getProvider();
+  const chromeBuiltInModel = chromeBuiltInAdapter.getModels()[0] || chromeBuiltInAdapter.buildDefaultModel('gemini-nano');
+
+  result[CHROME_BUILT_IN_PROVIDER_ID] = {
+    id: CHROME_BUILT_IN_PROVIDER_ID,
+    name: chromeBuiltInProvider.name,
+    enabled: false,
+    activationState: {
+      userConfigured: false
+    },
+    providerMeta: chromeBuiltInProvider,
+    modelMeta: chromeBuiltInModel,
+    connectionConfig: {},
+    paramOverrides: { ...(chromeBuiltInModel.defaultParameterValues || {}) },
     customParamOverrides: {}
   };
 

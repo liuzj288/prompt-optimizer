@@ -19,6 +19,8 @@ import { ModelScopeAdapter } from './modelscope-adapter';
 import { OllamaAdapter } from './ollama-adapter';
 import { MinimaxAdapter } from './minimax-adapter';
 import { CloudflareAdapter } from './cloudflare-adapter';
+import { GrokAdapter } from './grok-adapter';
+import { ChromeBuiltInAdapter } from './chrome-built-in-adapter';
 import { RequestConfigError } from '../errors';
 
 /**
@@ -64,6 +66,8 @@ export class TextAdapterRegistry
     const ollamaAdapter = new OllamaAdapter();
     const minimaxAdapter = new MinimaxAdapter();
     const cloudflareAdapter = new CloudflareAdapter();
+    const grokAdapter = new GrokAdapter();
+    const chromeBuiltInAdapter = new ChromeBuiltInAdapter();
 
     this.adapters.set('openai', openaiAdapter);
     this.adapters.set('openai-compatible', openaiCompatibleAdapter);
@@ -78,6 +82,8 @@ export class TextAdapterRegistry
     this.adapters.set('ollama', ollamaAdapter);
     this.adapters.set('minimax', minimaxAdapter);
     this.adapters.set('cloudflare', cloudflareAdapter);
+    this.adapters.set('grok', grokAdapter);
+    this.adapters.set('chrome-built-in', chromeBuiltInAdapter);
 
     // 预加载静态模型缓存
     this.preloadStaticModels();
